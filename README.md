@@ -8,14 +8,14 @@ This is driven by my own needs / ideas about planning. Look at the source code o
 
 ## Features (planned)
 
-[ ] Critical path: end 2 end, milestones
-[ ] Project start / end / duration
-[ ] Export samples to CSV
+* Critical path: end 2 end, milestones
+* Project start / end / duration
+* Export samples to CSV
 
 Maybe features
 
-[ ] Resource planning (maybe?)
-[ ] Combine plan with progress data
+* Resource planning (maybe?)
+* Combine plan with progress data
 
 ## Contributing
 
