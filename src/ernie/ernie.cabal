@@ -43,6 +43,7 @@ library
     Ernie
     Ernie.Chart
     Ernie.Example
+    Ernie.Export
     Ernie.PERT
     Ernie.Sample
     Ernie.Task
@@ -58,6 +59,7 @@ library
     , transformers
     , lens
     , profunctors
+    , algebraic-graphs
 
 executable ernie
   import:           base
