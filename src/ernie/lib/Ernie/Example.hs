@@ -20,7 +20,7 @@ import Ernie.Time (Days (..))
 test :: IO ()
 test = do
   TaskGraph g <- sample1 example
-  flip traverse_ (Map.toAscList g) $ \(_, (Task{taskName, taskDuration = Sample (Days n)}, _)) -> do
+  flip traverse_ (Map.toAscList g) $ \(_, (_, Task{taskName, taskDuration = Sample (Days n)})) -> do
     putStrLn $ Text.unpack taskName <> ": " <> show n <> " days"
   dotFile "example.dot" example
 

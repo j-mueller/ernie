@@ -5,18 +5,16 @@
 {-| Export PERT charts to various formats
 -}
 module Ernie.Export(
-  GraphContent(..),
+  DotNodeContent(..),
   dot,
   dotFile,
   algebraicGraph,
-  defaultStyle,
-  Stack(..)
+  defaultStyle
   ) where
 
 import Algebra.Graph qualified as AG
 import Algebra.Graph.Export.Dot (Attribute (..), Style (..))
 import Algebra.Graph.Export.Dot qualified as Dot
-import Data.Kind (Type)
 import Data.Map qualified as Map
 import Data.Set qualified as Set
 import Data.Text (Text)
@@ -30,12 +28,12 @@ import Ernie.Time (Days (..))
 
 {-| A DOT representation of the dependency graph.
 -}
-dot :: GraphContent e => Text -> TaskGraph e -> Text
+dot :: DotNodeContent e => Text -> TaskGraph e -> Text
 dot nm tg = Dot.export (defaultStyle tg nm) (algebraicGraph tg)
 
 {-| Write the dependency graph to a DOT file
 -}
-dotFile :: GraphContent e => FilePath -> TaskGraph e -> IO ()
+dotFile :: DotNodeContent e => FilePath -> TaskGraph e -> IO ()
 dotFile fp = TIO.writeFile fp . dot ""
 
 {-| Convert the task graph to a 'Algebra.Graph.Graph' of task IDs
@@ -43,38 +41,41 @@ dotFile fp = TIO.writeFile fp . dot ""
 algebraicGraph :: TaskGraph e -> AG.Graph TaskID
 algebraicGraph TaskGraph{unTaskGraph} =
   let vs = Set.toList (Map.keysSet unTaskGraph)
-      es = Map.toList unTaskGraph >>= \(a, (_, Set.toList -> bs)) -> (,a) <$> bs
+      es = Map.toList unTaskGraph >>= \(a, (Set.toList -> bs, _)) -> (,a) <$> bs
   in AG.edges es <> AG.vertices vs
 
-{-| Convert the 'taskDuration' field of a task to a
-label in the DOT syntax.
+{-| Types that can be shown inside a DOT graph node
 -}
-class GraphContent (e :: Type -> Type) where
-  getContent :: e Days -> Text
+class DotNodeContent e where
+  getContent :: e -> Text
 
 daysToText :: Days -> Text
 daysToText (Days n) = Text.pack (take 4 $ show n) <> "d"
 
-instance GraphContent Sample where
-  getContent (Sample s) = daysToText s
+instance DotNodeContent Days where
+  getContent = daysToText
 
-instance GraphContent PERTEstimate where
+instance DotNodeContent d => DotNodeContent (Sample d) where
+  getContent (Sample s) = getContent s
+
+instance DotNodeContent d => DotNodeContent (PERTEstimate d) where
   getContent PERTEstimate{pMin, pMode, pMax} =
-    "{" <> daysToText pMin <> "|" <> daysToText pMode <> "|" <> daysToText pMax <> "}"
+    "{" <> getContent pMin <> "|" <> getContent pMode <> "|" <> getContent pMax <> "}"
+
+instance DotNodeContent () where
+  getContent () = ""
 
 {-| Stack two graph contents vertically
 -}
-newtype Stack (a :: Type -> Type) (b :: Type -> Type) c = Stack (a c, b c)
-
-instance (GraphContent a, GraphContent b) => GraphContent (Stack a b) where
-  getContent (Stack (a, b)) = getContent a <> "|" <> getContent b
+instance (DotNodeContent a, DotNodeContent b) => DotNodeContent (a, b) where
+  getContent (a, b) = getContent a <> "|" <> getContent b
 
 {-| Default style for exporting taks graphs to DOT files
 -}
-defaultStyle :: GraphContent e => TaskGraph e -> Text -> Style TaskID Text
+defaultStyle :: DotNodeContent e => TaskGraph e -> Text -> Style TaskID Text
 defaultStyle TaskGraph{unTaskGraph} graphName =
-  let tn i = maybe (Text.pack $ show i) (taskName . fst) (Map.lookup i unTaskGraph)
-      cnt i = maybe "" (getContent . taskDuration . fst) (Map.lookup i unTaskGraph)
+  let tn i = maybe (Text.pack $ show i) (taskName . snd) (Map.lookup i unTaskGraph)
+      cnt i = maybe "" (getContent . taskDuration . snd) (Map.lookup i unTaskGraph)
       content i =
         tn i <> "|" <> cnt i
       labels i = ["label" := content i]
