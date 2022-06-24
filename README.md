@@ -17,6 +17,11 @@ Maybe features
 * Resource planning (maybe?)
 * Combine plan with progress data
 
+## Packages
+
+* `ernie` Implements PERT charts
+* `floyd-warshall` Implements the [Floyd-Warshall algorithm](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm). Based on a [blog post by Russell O'Connor](r6.ca/blog/20110808T035622Z.html)
+
 ## Contributing
 
 Contributions are welcome!

@@ -4,13 +4,14 @@ module Ernie.Sample(
   Sample(..),
   sampleChart,
   sampleChart',
-  sample1
+  sample1,
+  samplePERT
   ) where
 
 import Control.Monad.Primitive (PrimMonad, PrimState)
 import Data.Maybe (fromJust)
 import Ernie.Chart (PERTChart, TaskGraph)
-import Ernie.PERT (pert)
+import Ernie.PERT (PERTEstimate, pert)
 import Ernie.Time (Days)
 import Streaming (Of, Stream)
 import Streaming.Prelude qualified as S
@@ -19,14 +20,15 @@ import System.Random.MWC.Probability (Gen, createSystemRandom, sample)
 newtype Sample n = Sample{ getSample :: n }
   deriving stock (Eq, Ord, Show)
 
+{-| Sample the distribution of the PERTEstimate
+-}
+samplePERT :: PrimMonad m => Gen (PrimState m) -> PERTEstimate Days -> m (Sample Days)
+samplePERT gen t = Sample <$> sample (pert t) gen
+
 {-| An infinite stream of samples from the PERT chart distribution, using the provided generator
 -}
 sampleChart' :: PrimMonad m => Gen (PrimState m) -> PERTChart -> Stream (Of (TaskGraph (Sample Days))) m r
-sampleChart' gen chart =
-  let f _ = do
-        c' <- traverse (\t -> Sample <$> sample (pert t) gen) chart
-        pure (Right (c', ()))
-  in S.unfoldr f ()
+sampleChart' gen = S.repeatM . traverse (samplePERT gen)
 
 {-| An infinite stream of samples from the PERT chart distribution
 -}
