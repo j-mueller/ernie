@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE GADTs               #-}
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -6,9 +7,14 @@
 -}
 module FW.Matrix(
   Matrix(..),
+  mapPos,
+  SomeMatrix(..),
+  mapMatrix,
+  withMatrix,
   (*!!),
   (!*),
   mkMatrix,
+  mkMatrix',
   fromList,
   fromLists,
   toList,
@@ -41,6 +47,22 @@ newtype Matrix (d :: Nat) a = Matrix{ unMatrix :: M.Matrix a }
   deriving stock (Functor, Foldable, Traversable, Eq, Generic)
   deriving newtype (Show, Applicative)
 
+{-| Map the elements with their index
+-}
+mapPos :: ((Int, Int) -> a -> b) -> Matrix d a -> Matrix d b
+mapPos f (Matrix m) = Matrix (M.mapPos f m)
+
+{-| 'Matrix' with existentially qualified dimensions
+-}
+data SomeMatrix a where
+  SomeMatrix :: forall (d :: Nat) a. KnownNat d => Matrix d a -> SomeMatrix a
+
+mapMatrix :: forall a b. (forall (d :: Nat). KnownNat d => Matrix d a -> Matrix d b) -> SomeMatrix a -> SomeMatrix b
+mapMatrix f (SomeMatrix m) = SomeMatrix (f m)
+
+withMatrix :: forall a r. (forall (d :: Nat). KnownNat d => Matrix d a -> r) -> SomeMatrix a -> r
+withMatrix f (SomeMatrix m) = f m
+
 {-| Scalar times matrix
 -}
 (*!!) :: Semiring a => a -> Matrix d a -> Matrix d a
@@ -54,8 +76,13 @@ newtype Matrix (d :: Nat) a = Matrix{ unMatrix :: M.Matrix a }
 {-| Construct a 'Matrix' from a function
 -}
 mkMatrix :: forall d a. KnownNat d => ((Int, Int) -> a) -> Matrix d a
-mkMatrix =
-  let n = matrixDims (Proxy @d)
+mkMatrix = mkMatrix' (Proxy @d)
+
+{-| Construct a 'Matrix' from a function with a Proxy value
+-}
+mkMatrix' :: forall d a. KnownNat d => Proxy d -> ((Int, Int) -> a) -> Matrix d a
+mkMatrix' p =
+  let n = matrixDims p
   in Matrix . M.matrix n n
 
 {-| Construct a 'Matrix' from a list of values (row major)

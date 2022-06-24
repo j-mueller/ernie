@@ -11,11 +11,13 @@
 building them
 -}
 module Ernie.Chart(
-  TaskID,
+  TaskID(..),
   task0,
   nextID,
   DependencyGraph(..),
   emptyGraph,
+  structure,
+  GraphStructure(..),
   PERTChart,
   -- * Building charts
   Chart,
@@ -57,13 +59,34 @@ task0 = TaskID 0
 next :: TaskID -> TaskID
 next (TaskID i) = TaskID (succ i)
 
-newtype DependencyGraph e = DependencyGraph { unDependencyGraph :: Map TaskID (Set TaskID, e) }
+newtype DependencyGraph k e = DependencyGraph { unDependencyGraph :: Map k (Set k, e) }
   deriving stock (Functor, Foldable, Traversable)
 
 makePrisms ''DependencyGraph
 
-emptyGraph :: DependencyGraph e
+emptyGraph :: DependencyGraph k e
 emptyGraph = DependencyGraph Map.empty
+
+{-| Information about the nodes in a dependency graph
+-}
+data GraphStructure k =
+      GraphStructure
+        { gsInitialTasks :: Set k -- ^ Tasks that don't depend on any other tasks
+        , gsFinalTasks   :: Set k -- ^ Tasks that no other task depends on
+        , gsAllTasks     :: Set k -- ^ The set of all task IDs that exist
+        }
+
+{-| The tasks that have no dependencies, and those that no other tasks
+depend on.
+-}
+structure :: Ord k => DependencyGraph k e -> GraphStructure k
+structure DependencyGraph{unDependencyGraph} =
+  let targets = Map.keysSet unDependencyGraph
+      sources = foldMap fst unDependencyGraph
+      gsAllTasks = Set.union targets sources
+      gsInitialTasks = Map.keysSet (Map.filter (Set.null . fst) unDependencyGraph)
+      gsFinalTasks   = gsAllTasks `Set.difference` sources
+  in GraphStructure{gsInitialTasks, gsFinalTasks, gsAllTasks}
 
 {-| Class for constructing dependency graphs
 -}
@@ -91,10 +114,10 @@ task taskName taskDuration deps = do
   traverse_ (t `dependsOn`) deps
   pure t
 
-newtype ChartT duration m a = ChartT { runChartT_ :: StateT (DependencyGraph (Task duration)) m a }
+newtype ChartT duration m a = ChartT { runChartT_ :: StateT (DependencyGraph TaskID (Task duration)) m a }
   deriving newtype (Functor, Applicative, Monad)
 
-nextID :: MonadState (DependencyGraph duration) m => m TaskID
+nextID :: MonadState (DependencyGraph TaskID duration) m => m TaskID
 nextID = maybe task0 (next . fst) <$> gets (Map.lookupMax . unDependencyGraph)
 
 instance Monad m => MonadChart (ChartT duration m) where
@@ -109,12 +132,12 @@ type Chart duration = ChartT duration Identity
 
 {-| Run a 'Chart' computation
 -}
-runChart :: Chart duration a -> (a, DependencyGraph (Task duration))
+runChart :: Chart duration a -> (a, DependencyGraph TaskID (Task duration))
 runChart = runIdentity . runChartT
 
 {-| Run the 'ChartT' monad transformer
 -}
-runChartT :: ChartT duration m a -> m (a, DependencyGraph (Task duration))
+runChartT :: ChartT duration m a -> m (a, DependencyGraph TaskID (Task duration))
 runChartT = flip runStateT emptyGraph . runChartT_
 
-type PERTChart = DependencyGraph (Task (PERTEstimate Days))
+type PERTChart = DependencyGraph TaskID (Task (PERTEstimate Days))

@@ -28,17 +28,17 @@ import Ernie.Time (Days (..))
 
 {-| A DOT representation of the dependency graph.
 -}
-dot :: DotNodeContent e => Text -> DependencyGraph (Task e) -> Text
+dot :: DotNodeContent e => Text -> DependencyGraph TaskID (Task e) -> Text
 dot nm tg = Dot.export (defaultStyle tg nm) (algebraicGraph tg)
 
 {-| Write the dependency graph to a DOT file
 -}
-dotFile :: DotNodeContent e => FilePath -> DependencyGraph (Task e) -> IO ()
+dotFile :: DotNodeContent e => FilePath -> DependencyGraph TaskID (Task e) -> IO ()
 dotFile fp = TIO.writeFile fp . dot ""
 
 {-| Convert the task graph to a 'Algebra.Graph.Graph' of task IDs
 -}
-algebraicGraph :: DependencyGraph e -> AG.Graph TaskID
+algebraicGraph :: DependencyGraph TaskID e -> AG.Graph TaskID
 algebraicGraph DependencyGraph{unDependencyGraph} =
   let vs = Set.toList (Map.keysSet unDependencyGraph)
       es = Map.toList unDependencyGraph >>= \(a, (Set.toList -> bs, _)) -> (,a) <$> bs
@@ -72,7 +72,7 @@ instance (DotNodeContent a, DotNodeContent b) => DotNodeContent (a, b) where
 
 {-| Default style for exporting taks graphs to DOT files
 -}
-defaultStyle :: DotNodeContent e => DependencyGraph (Task e) -> Text -> Style TaskID Text
+defaultStyle :: DotNodeContent e => DependencyGraph TaskID (Task e) -> Text -> Style TaskID Text
 defaultStyle DependencyGraph{unDependencyGraph} graphName =
   let tn i = maybe (Text.pack $ show i) (taskName . snd) (Map.lookup i unDependencyGraph)
       cnt i = maybe "" (getContent . taskDuration . snd) (Map.lookup i unDependencyGraph)

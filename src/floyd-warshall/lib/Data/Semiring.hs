@@ -6,6 +6,7 @@ module Data.Semiring(
   WrappedNum(..),
   StarSemiring(..),
   Tropical(..),
+  Real_(..),
   RT,
   rt,
   inf,
@@ -62,14 +63,14 @@ instance Num a => Group (WrappedNum a) where
   negate = fmap P.negate
 
 data Tropical a = Tropical !a | Infinity
-  deriving stock Eq
+  deriving stock (Eq, Ord)
 
 instance Show a => Show (Tropical a) where
   show (Tropical a) = show a
   show Infinity     = "inf."
 
 newtype Real_ a = Real_ a
-  deriving newtype (Show, Eq)
+  deriving newtype (Show, Eq, Ord)
 
 instance (Ord a, Num a) => Additive (Real_ (Tropical a)) where
   zero = Real_ Infinity

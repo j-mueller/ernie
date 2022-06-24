@@ -44,6 +44,7 @@ library
     Ernie.Chart
     Ernie.Example
     Ernie.Export
+    Ernie.Measure
     Ernie.PERT
     Ernie.Sample
     Ernie.Task
