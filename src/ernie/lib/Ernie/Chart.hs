@@ -57,7 +57,7 @@ task0 = TaskID 0
 next :: TaskID -> TaskID
 next (TaskID i) = TaskID (succ i)
 
-newtype TaskGraph e = TaskGraph { unTaskGraph :: Map TaskID (Set TaskID, Task e) }
+newtype TaskGraph e = TaskGraph { unTaskGraph :: Map TaskID (Set TaskID, e) }
   deriving stock (Functor, Foldable, Traversable)
 
 makePrisms ''TaskGraph
@@ -91,7 +91,7 @@ task taskName taskDuration deps = do
   traverse_ (t `dependsOn`) deps
   pure t
 
-newtype ChartT duration m a = ChartT { runChartT_ :: StateT (TaskGraph duration) m a }
+newtype ChartT duration m a = ChartT { runChartT_ :: StateT (TaskGraph (Task duration)) m a }
   deriving newtype (Functor, Applicative, Monad)
 
 nextID :: MonadState (TaskGraph duration) m => m TaskID
@@ -109,12 +109,12 @@ type Chart duration = ChartT duration Identity
 
 {-| Run a 'Chart' computation
 -}
-runChart :: Chart duration a -> (a, TaskGraph duration)
+runChart :: Chart duration a -> (a, TaskGraph (Task duration))
 runChart = runIdentity . runChartT
 
 {-| Run the 'ChartT' monad transformer
 -}
-runChartT :: ChartT duration m a -> m (a, TaskGraph duration)
+runChartT :: ChartT duration m a -> m (a, TaskGraph (Task duration))
 runChartT = flip runStateT emptyGraph . runChartT_
 
-type PERTChart = TaskGraph (PERTEstimate Days)
+type PERTChart = TaskGraph (Task (PERTEstimate Days))

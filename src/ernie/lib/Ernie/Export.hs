@@ -28,12 +28,12 @@ import Ernie.Time (Days (..))
 
 {-| A DOT representation of the dependency graph.
 -}
-dot :: DotNodeContent e => Text -> TaskGraph e -> Text
+dot :: DotNodeContent e => Text -> TaskGraph (Task e) -> Text
 dot nm tg = Dot.export (defaultStyle tg nm) (algebraicGraph tg)
 
 {-| Write the dependency graph to a DOT file
 -}
-dotFile :: DotNodeContent e => FilePath -> TaskGraph e -> IO ()
+dotFile :: DotNodeContent e => FilePath -> TaskGraph (Task e) -> IO ()
 dotFile fp = TIO.writeFile fp . dot ""
 
 {-| Convert the task graph to a 'Algebra.Graph.Graph' of task IDs
@@ -72,7 +72,7 @@ instance (DotNodeContent a, DotNodeContent b) => DotNodeContent (a, b) where
 
 {-| Default style for exporting taks graphs to DOT files
 -}
-defaultStyle :: DotNodeContent e => TaskGraph e -> Text -> Style TaskID Text
+defaultStyle :: DotNodeContent e => TaskGraph (Task e) -> Text -> Style TaskID Text
 defaultStyle TaskGraph{unTaskGraph} graphName =
   let tn i = maybe (Text.pack $ show i) (taskName . snd) (Map.lookup i unTaskGraph)
       cnt i = maybe "" (getContent . taskDuration . snd) (Map.lookup i unTaskGraph)

@@ -3,6 +3,7 @@ name:               floyd-warshall
 version:            0.1.0.0
 
 synopsis: Implementation of the floyd-warshall algorithm
+description: Implementation of the floyd-warshall algorithm in pure Haskell. Includes vectors and matrices with statically checked sizes. Could probably be faster.
 bug-reports: https://github.com/j-mueller/ernie
 
 license: BSD-3-Clause
@@ -49,8 +50,7 @@ library
     FW.Vector
   build-depends:
     matrix,
-    linear,
-    reflection,
+    linear
 
 test-suite floyd-warshall-test
   import: base, project-config
