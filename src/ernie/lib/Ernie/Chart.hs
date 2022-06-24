@@ -14,7 +14,7 @@ module Ernie.Chart(
   TaskID,
   task0,
   nextID,
-  TaskGraph(..),
+  DependencyGraph(..),
   emptyGraph,
   PERTChart,
   -- * Building charts
@@ -57,13 +57,13 @@ task0 = TaskID 0
 next :: TaskID -> TaskID
 next (TaskID i) = TaskID (succ i)
 
-newtype TaskGraph e = TaskGraph { unTaskGraph :: Map TaskID (Set TaskID, e) }
+newtype DependencyGraph e = DependencyGraph { unDependencyGraph :: Map TaskID (Set TaskID, e) }
   deriving stock (Functor, Foldable, Traversable)
 
-makePrisms ''TaskGraph
+makePrisms ''DependencyGraph
 
-emptyGraph :: TaskGraph e
-emptyGraph = TaskGraph Map.empty
+emptyGraph :: DependencyGraph e
+emptyGraph = DependencyGraph Map.empty
 
 {-| Class for constructing dependency graphs
 -}
@@ -91,30 +91,30 @@ task taskName taskDuration deps = do
   traverse_ (t `dependsOn`) deps
   pure t
 
-newtype ChartT duration m a = ChartT { runChartT_ :: StateT (TaskGraph (Task duration)) m a }
+newtype ChartT duration m a = ChartT { runChartT_ :: StateT (DependencyGraph (Task duration)) m a }
   deriving newtype (Functor, Applicative, Monad)
 
-nextID :: MonadState (TaskGraph duration) m => m TaskID
-nextID = maybe task0 (next . fst) <$> gets (Map.lookupMax . unTaskGraph)
+nextID :: MonadState (DependencyGraph duration) m => m TaskID
+nextID = maybe task0 (next . fst) <$> gets (Map.lookupMax . unDependencyGraph)
 
 instance Monad m => MonadChart (ChartT duration m) where
   type TaskDuration (ChartT duration m) = duration
   addTask t = ChartT $ do
             i <- nextID
-            _TaskGraph . at i .= Just (mempty, t)
+            _DependencyGraph . at i .= Just (mempty, t)
             pure i
-  i1 `dependsOn` i2 = ChartT (_TaskGraph . at i1 . _Just . _1 %= Set.insert i2)
+  i1 `dependsOn` i2 = ChartT (_DependencyGraph . at i1 . _Just . _1 %= Set.insert i2)
 
 type Chart duration = ChartT duration Identity
 
 {-| Run a 'Chart' computation
 -}
-runChart :: Chart duration a -> (a, TaskGraph (Task duration))
+runChart :: Chart duration a -> (a, DependencyGraph (Task duration))
 runChart = runIdentity . runChartT
 
 {-| Run the 'ChartT' monad transformer
 -}
-runChartT :: ChartT duration m a -> m (a, TaskGraph (Task duration))
+runChartT :: ChartT duration m a -> m (a, DependencyGraph (Task duration))
 runChartT = flip runStateT emptyGraph . runChartT_
 
-type PERTChart = TaskGraph (Task (PERTEstimate Days))
+type PERTChart = DependencyGraph (Task (PERTEstimate Days))

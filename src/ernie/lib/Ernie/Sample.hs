@@ -10,7 +10,7 @@ module Ernie.Sample(
 
 import Control.Monad.Primitive (PrimMonad, PrimState)
 import Data.Maybe (fromJust)
-import Ernie.Chart (PERTChart, TaskGraph)
+import Ernie.Chart (PERTChart, DependencyGraph)
 import Ernie.PERT (PERTEstimate, pert)
 import Ernie.Task (Task)
 import Ernie.Time (Days)
@@ -28,16 +28,16 @@ samplePERT gen t = Sample <$> sample (pert t) gen
 
 {-| An infinite stream of samples from the PERT chart distribution, using the provided generator
 -}
-sampleChart' :: PrimMonad m => Gen (PrimState m) -> TaskGraph (Task (PERTEstimate Days)) -> Stream (Of (TaskGraph (Task (Sample Days)))) m r
+sampleChart' :: PrimMonad m => Gen (PrimState m) -> DependencyGraph (Task (PERTEstimate Days)) -> Stream (Of (DependencyGraph (Task (Sample Days)))) m r
 sampleChart' gen = S.repeatM . traverse (traverse (samplePERT gen))
 
 {-| An infinite stream of samples from the PERT chart distribution
 -}
-sampleChart :: PERTChart -> IO (Stream (Of (TaskGraph (Task (Sample Days)))) IO r)
+sampleChart :: PERTChart -> IO (Stream (Of (DependencyGraph (Task (Sample Days)))) IO r)
 sampleChart chart = sampleChart' <$> createSystemRandom <*> pure chart
 
 {-| Draw one sample from the distribution of task durations.
 Consider using 'sampleChart' if you need more than one sample.
 -}
-sample1 :: PERTChart -> IO (TaskGraph (Task (Sample Days)))
+sample1 :: PERTChart -> IO (DependencyGraph (Task (Sample Days)))
 sample1 chart = sampleChart chart >>= fmap fromJust . S.head_

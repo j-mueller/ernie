@@ -10,7 +10,7 @@ import Control.Monad (void)
 import Data.Foldable (traverse_)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
-import Ernie.Chart (PERTChart, TaskGraph (..), runChart, task)
+import Ernie.Chart (PERTChart, DependencyGraph (..), runChart, task)
 import Ernie.Export (dotFile)
 import Ernie.PERT (estimate)
 import Ernie.Sample (Sample (..), sample1)
@@ -19,7 +19,7 @@ import Ernie.Time (Days (..))
 
 test :: IO ()
 test = do
-  TaskGraph g <- sample1 example
+  DependencyGraph g <- sample1 example
   flip traverse_ (Map.toAscList g) $ \(_, (_, Task{taskName, taskDuration = Sample (Days n)})) -> do
     putStrLn $ Text.unpack taskName <> ": " <> show n <> " days"
   dotFile "example.dot" example
