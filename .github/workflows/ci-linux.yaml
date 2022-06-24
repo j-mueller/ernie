@@ -1,0 +1,46 @@
+name: ci-linux
+on:
+  pull_request:
+  push:
+    paths:
+      - '.github/workflows/ci-linux.yaml'
+      - 'cabal.project'
+      - '*/src/**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      # install deps.
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install fd-find
+
+      - name: Cache .cabal
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cabal
+          key: cabal
+
+      - uses: haskell/actions/setup@v1
+        with:
+          ghc-version: '8.10' # Resolves to the latest point release of GHC 8.10
+          cabal-version: '3.6.2.0' # Exact version of Cabal
+
+      - name: Haskell tools
+        run: cabal install --overwrite-policy=always c2hs stylish-haskell
+
+      - uses: actions/checkout@v2
+
+      - name: stylish-haskell
+        run: |
+          fdfind --extension hs --exclude 'dist-newstyle/*' --exclude 'dist/*' --exclude '.stack-work/*' --exec bash -c "~/.cabal/bin/stylish-haskell -i {} || true"
+          git diff --exit-code
+
+      - name: build
+        run: cabal build -j floyd-warshall ernie
+
+      - name: test
+        run: cabal run floyd-warshall-test

@@ -1,14 +1,17 @@
 cabal-version:      2.4
-name:               ernie
+name:               floyd-warshall
 version:            0.1.0.0
 
-synopsis: Project planning with PERT estimates
+synopsis: Implementation of the floyd-warshall algorithm
+description: Implementation of the floyd-warshall algorithm in pure Haskell. Includes vectors and matrices with statically checked sizes. Could probably be faster.
 bug-reports: https://github.com/j-mueller/ernie
+
 license: BSD-3-Clause
 author:             Jann Müller
 maintainer:         j-mueller@users.noreply.github.com
 copyright: (c) 2022 Jann Müller
-category: planning
+
+category: algorithms
 extra-source-files: CHANGELOG.md
 
 common base
@@ -27,6 +30,8 @@ common project-config
                         DeriveFoldable
                         DeriveTraversable
                         DeriveAnyClass
+                        DerivingVia
+                        TypeApplications
 
   ghc-options:          -Wall
                         -Wcompat
@@ -40,33 +45,23 @@ library
   import: base, project-config
   hs-source-dirs: lib
   exposed-modules:
-    Ernie
-    Ernie.Chart
-    Ernie.Example
-    Ernie.Export
-    Ernie.Measure
-    Ernie.PERT
-    Ernie.Sample
-    Ernie.Task
-    Ernie.Time
-    Ernie.Utils
+    Data.Semiring
+    FW.Matrix
+    FW.Vector
+  build-depends:
+    matrix,
+    linear
+
+test-suite floyd-warshall-test
+  import: base, project-config
+  type: exitcode-stdio-1.0
+  default-language: Haskell2010
+  main-is: Main.hs
+  hs-source-dirs: test
   build-depends:
     floyd-warshall
   build-depends:
-    aeson
-    , mwc-probability
-    , primitive
-    , containers
-    , text
-    , streaming
-    , mtl
-    , transformers
-    , lens
-    , profunctors
-    , algebraic-graphs
-    , reflection
-
-executable ernie
-  import:           base
-  main-is:          Main.hs
-  hs-source-dirs:   app
+      tasty -any,
+      tasty-quickcheck -any,
+      QuickCheck -any,
+      linear -any

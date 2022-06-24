@@ -20,7 +20,7 @@ import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.IO qualified as TIO
-import Ernie.Chart (TaskGraph (..), TaskID)
+import Ernie.Chart (DependencyGraph (..), TaskID)
 import Ernie.PERT (PERTEstimate (..))
 import Ernie.Sample (Sample (..))
 import Ernie.Task (Task (..))
@@ -28,20 +28,20 @@ import Ernie.Time (Days (..))
 
 {-| A DOT representation of the dependency graph.
 -}
-dot :: DotNodeContent e => Text -> TaskGraph e -> Text
+dot :: DotNodeContent e => Text -> DependencyGraph TaskID (Task e) -> Text
 dot nm tg = Dot.export (defaultStyle tg nm) (algebraicGraph tg)
 
 {-| Write the dependency graph to a DOT file
 -}
-dotFile :: DotNodeContent e => FilePath -> TaskGraph e -> IO ()
+dotFile :: DotNodeContent e => FilePath -> DependencyGraph TaskID (Task e) -> IO ()
 dotFile fp = TIO.writeFile fp . dot ""
 
 {-| Convert the task graph to a 'Algebra.Graph.Graph' of task IDs
 -}
-algebraicGraph :: TaskGraph e -> AG.Graph TaskID
-algebraicGraph TaskGraph{unTaskGraph} =
-  let vs = Set.toList (Map.keysSet unTaskGraph)
-      es = Map.toList unTaskGraph >>= \(a, (Set.toList -> bs, _)) -> (,a) <$> bs
+algebraicGraph :: DependencyGraph TaskID e -> AG.Graph TaskID
+algebraicGraph DependencyGraph{unDependencyGraph} =
+  let vs = Set.toList (Map.keysSet unDependencyGraph)
+      es = Map.toList unDependencyGraph >>= \(a, (Set.toList -> bs, _)) -> (,a) <$> bs
   in AG.edges es <> AG.vertices vs
 
 {-| Types that can be shown inside a DOT graph node
@@ -72,10 +72,10 @@ instance (DotNodeContent a, DotNodeContent b) => DotNodeContent (a, b) where
 
 {-| Default style for exporting taks graphs to DOT files
 -}
-defaultStyle :: DotNodeContent e => TaskGraph e -> Text -> Style TaskID Text
-defaultStyle TaskGraph{unTaskGraph} graphName =
-  let tn i = maybe (Text.pack $ show i) (taskName . snd) (Map.lookup i unTaskGraph)
-      cnt i = maybe "" (getContent . taskDuration . snd) (Map.lookup i unTaskGraph)
+defaultStyle :: DotNodeContent e => DependencyGraph TaskID (Task e) -> Text -> Style TaskID Text
+defaultStyle DependencyGraph{unDependencyGraph} graphName =
+  let tn i = maybe (Text.pack $ show i) (taskName . snd) (Map.lookup i unDependencyGraph)
+      cnt i = maybe "" (getContent . taskDuration . snd) (Map.lookup i unDependencyGraph)
       content i =
         tn i <> "|" <> cnt i
       labels i = ["label" := content i]
