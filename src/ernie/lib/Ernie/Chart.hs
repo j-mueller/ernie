@@ -7,6 +7,7 @@
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 {-| PERT Charts with a simple monadic interface for
 building them
 -}
@@ -29,7 +30,8 @@ module Ernie.Chart(
   ) where
 
 import Control.Lens (_1, _Just, at, makePrisms, (%=), (.=))
-import Control.Monad.State (MonadState, gets)
+import Control.Monad.Except (MonadError (..))
+import Control.Monad.State (MonadState (..), gets, lift)
 import Control.Monad.Trans.State.Strict (StateT (..))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Foldable (traverse_)
@@ -116,6 +118,21 @@ task taskName taskDuration deps = do
 
 newtype ChartT duration m a = ChartT { runChartT_ :: StateT (DependencyGraph TaskID (Task duration)) m a }
   deriving newtype (Functor, Applicative, Monad)
+
+instance MonadState s m => MonadState s (ChartT duration m) where
+  get = ChartT (lift get)
+  put s = ChartT (lift $ put s)
+
+instance MonadError e m => MonadError e (ChartT duration m) where
+  throwError = ChartT . lift . throwError
+  catchError (ChartT m) f =
+    let f' = fmap runChartT_ f
+    in ChartT (catchError m f')
+
+instance MonadChart m => MonadChart (StateT s m) where
+  type TaskDuration (StateT s m) = TaskDuration m
+  addTask = lift . addTask
+  dependsOn a = lift . dependsOn a
 
 nextID :: MonadState (DependencyGraph TaskID duration) m => m TaskID
 nextID = maybe task0 (next . fst) <$> gets (Map.lookupMax . unDependencyGraph)

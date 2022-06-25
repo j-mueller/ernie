@@ -11,33 +11,13 @@ module Ernie.Example(
   ) where
 
 import Control.Monad (void)
-import Data.Foldable (traverse_)
-import Data.Map.Strict qualified as Map
-import Data.Text qualified as Text
-import Ernie.Chart (DependencyGraph (..), GraphStructure (..), PERTChart,
-                    runChart, structure, task)
+import Ernie.Chart (PERTChart, runChart, task)
 import Ernie.Export (dotFile)
-import Ernie.Measure (Duration (..), criticalPath)
 import Ernie.PERT (estimate)
-import Ernie.Sample (Sample (..), sample1)
-import Ernie.Task (Task (..))
-import Ernie.Time (Days (..))
+import Ernie.Sample (measureSamples)
 
 test :: IO ()
-test = do
-  graph@(DependencyGraph g) <- sample1 example
-  flip traverse_ (Map.toAscList g) $ \(_, (_, Task{taskName, taskDuration = Sample (Days n)})) -> do
-    putStrLn $ Text.unpack taskName <> ": " <> show n <> " days"
-  let GraphStructure{gsInitialTasks, gsFinalTasks} = structure graph
-  putStrLn "Initial tasks:"
-  traverse_ (putStrLn . (<>) "  " . show) gsInitialTasks
-  putStrLn "Final tasks:"
-  traverse_ (putStrLn . (<>) "  " . show) gsFinalTasks
-  dotFile "example.dot" graph
-
-  putStrLn "Critical path:"
-  let g' = fmap (Duration . getDays . getSample . taskDuration) graph
-  putStrLn ("  " <> show (criticalPath g'))
+test = measureSamples 1000 example >>= dotFile "example.dot"
 
 example :: PERTChart
 example = snd $ runChart $ do

@@ -1,0 +1,14 @@
+digraph 
+{
+node [shape=Mrecord]
+rankdir=LR
+  node [color="darkgray" fillcolor="grey93" style="filled" height=".1" shape="record"]
+  "TaskID 0" [label="Build backend|{0.5d|1.5d|4.0d}|CP: 100.%"]
+  "TaskID 1" [label="Build frontend|{2.0d|4.5d|7.0d}|CP: 46.1%"]
+  "TaskID 2" [label="Write docs|{3.0d|4.0d|9.0d}|CP: 53.8%"]
+  "TaskID 3" [label="Deploy|{3.0d|3.5d|8.0d}|CP: 100.%"]
+  "TaskID 0" -> "TaskID 1"
+  "TaskID 0" -> "TaskID 2"
+  "TaskID 1" -> "TaskID 3"
+  "TaskID 2" -> "TaskID 3"
+}
