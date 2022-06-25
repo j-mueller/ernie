@@ -18,6 +18,7 @@ import Algebra.Graph.Export.Dot qualified as Dot
 import Data.Map qualified as Map
 import Data.Monoid (Sum (..))
 import Data.Set qualified as Set
+import Data.TDigest qualified as TDigest
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.IO qualified as TIO
@@ -68,9 +69,15 @@ instance DotNodeContent () where
   getContent () = ""
 
 instance DotNodeContent TaskMeasure where
-  getContent TaskMeasure{tmCritPathCount = Sum c, tmTotalCount = Sum t} =
+  getContent TaskMeasure{tmCritPathCount = Sum c, tmTotalCount = Sum t, tmTotalDuration} =
     let perc = (fromIntegral c / fromIntegral t) * (100 :: Double)
-    in Text.pack $ "CP: " <> (take 4 $ show perc) <> "%"
+        cp = Text.pack $ "CP: " <> (take 4 $ show perc) <> "%"
+        five = TDigest.quantile 0.05 tmTotalDuration
+        fifty = TDigest.quantile 0.5 tmTotalDuration
+        ninetyFive = TDigest.quantile 0.95 tmTotalDuration
+        sw = maybe "" (Text.pack . take 4 . show)
+        dur = "{" <> sw five <> "d |" <> sw fifty <> "d | " <> sw ninetyFive <> "d }"
+    in cp <> "|" <> dur
 
 {-| Stack two graph contents vertically
 -}

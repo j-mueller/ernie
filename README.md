@@ -1,6 +1,6 @@
 # ernie
 
-[PERT](https://en.wikipedia.org/wiki/Program_evaluation_and_review_technique) Project planning in Haskell. Generates a PERT chart and computes the critical path based on simulations.
+[PERT](https://en.wikipedia.org/wiki/Program_evaluation_and_review_technique) Project planning in Haskell. Generates a PERT chart and computes the critical path and duration quantiles based on simulations.
 
 ![docs/example.svg](docs/example.svg)
 
@@ -19,12 +19,12 @@ Task durations are entered as PERT estimates, but internally we treat them as pr
 ## Features (planned)
 
 * Critical path: milestones
-* Project start / end / duration
 * Risk measures
 * Export samples to CSV
 
 Maybe features
 
+* Calendar - map project days to calendar days
 * Resource planning (maybe?)
 * Combine plan with progress data
 
