@@ -16,11 +16,13 @@ import Algebra.Graph qualified as AG
 import Algebra.Graph.Export.Dot (Attribute (..), Style (..))
 import Algebra.Graph.Export.Dot qualified as Dot
 import Data.Map qualified as Map
+import Data.Monoid (Sum (..))
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.IO qualified as TIO
 import Ernie.Chart (DependencyGraph (..), TaskID)
+import Ernie.Measure (TaskMeasure (..))
 import Ernie.PERT (PERTEstimate (..))
 import Ernie.Sample (Sample (..))
 import Ernie.Task (Task (..))
@@ -64,6 +66,11 @@ instance DotNodeContent d => DotNodeContent (PERTEstimate d) where
 
 instance DotNodeContent () where
   getContent () = ""
+
+instance DotNodeContent TaskMeasure where
+  getContent TaskMeasure{tmCritPathCount = Sum c, tmTotalCount = Sum t} =
+    let perc = (fromIntegral c / fromIntegral t) * (100 :: Double)
+    in Text.pack $ "CP: " <> (take 4 $ show perc) <> "%"
 
 {-| Stack two graph contents vertically
 -}

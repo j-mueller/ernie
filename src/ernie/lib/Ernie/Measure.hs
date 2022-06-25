@@ -1,8 +1,12 @@
+{-# LANGUAGE DataKinds      #-}
 {-# LANGUAGE DerivingVia    #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-| Measures on graphs
 -}
 module Ernie.Measure(
+  measure,
+  TaskMeasure(..),
+  -- * Computing measures on graphs
   criticalPath,
   Duration(..),
   -- * Etc.
@@ -18,18 +22,50 @@ module Ernie.Measure(
 
 import Control.Monad (guard)
 import Data.Bifunctor (Bifunctor (..))
-import Data.Map (Map)
-import Data.Map qualified as Map
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import Data.Monoid (Sum (..))
 import Data.Reflection qualified as R
 import Data.Semiring (Additive (..), RT, Real_ (..), Semiring (..),
                       StarSemiring (..), Tropical (..), inf, rt)
 import Data.Set qualified as Set
+import Data.TDigest (TDigest)
+import Data.TDigest qualified as TDigest
 import Ernie.Chart (DependencyGraph (..), GraphStructure (..), TaskID (..),
                     structure)
 import FW.Matrix (SomeMatrix (..))
 import FW.Matrix qualified as M
+
+data TaskMeasure =
+  TaskMeasure
+    { tmDuration      :: !(TDigest 25)
+    , tmCritPathCount :: !(Sum Int)
+    , tmTotalCount    :: !(Sum Int)
+    }
+
+instance Semigroup TaskMeasure where
+  l <> r =
+    TaskMeasure
+      { tmDuration = tmDuration l <> tmDuration r
+      , tmCritPathCount = tmCritPathCount l <> tmCritPathCount r
+      , tmTotalCount = tmTotalCount l <> tmTotalCount r
+      }
+
+instance Monoid TaskMeasure where
+  mempty = TaskMeasure mempty mempty mempty
+
+measure :: DependencyGraph TaskID Duration -> Map TaskID TaskMeasure
+measure graph =
+  let cpIDs = maybe Set.empty (Set.fromList . fst) (criticalPath graph)
+      DependencyGraph{unDependencyGraph} = graph
+      m taskID (_, Duration duration) =
+        TaskMeasure
+          { tmDuration = TDigest.singleton duration
+          , tmCritPathCount = if taskID `Set.member` cpIDs then 1 else 0
+          , tmTotalCount = 1
+          }
+  in Map.mapWithKey m unDependencyGraph
 
 {- Note: Computing Measures
 

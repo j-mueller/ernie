@@ -1,7 +1,9 @@
+{-# LANGUAGE TupleSections #-}
 {-| Sample from a PERT Chart
 -}
 module Ernie.Sample(
   Sample(..),
+  measureSamples,
   sampleChart,
   sampleChart',
   sample1,
@@ -9,11 +11,14 @@ module Ernie.Sample(
   ) where
 
 import Control.Monad.Primitive (PrimMonad, PrimState)
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
-import Ernie.Chart (DependencyGraph, PERTChart, TaskID)
+import Ernie.Chart (DependencyGraph (..), PERTChart, TaskID)
+import Ernie.Measure (TaskMeasure)
+import Ernie.Measure qualified as M
 import Ernie.PERT (PERTEstimate, pert)
-import Ernie.Task (Task)
-import Ernie.Time (Days)
+import Ernie.Task (Task (..))
+import Ernie.Time (Days (..))
 import Streaming (Of, Stream)
 import Streaming.Prelude qualified as S
 import System.Random.MWC.Probability (Gen, createSystemRandom, sample)
@@ -41,3 +46,16 @@ Consider using 'sampleChart' if you need more than one sample.
 -}
 sample1 :: PERTChart -> IO (DependencyGraph TaskID (Task (Sample Days)))
 sample1 chart = sampleChart chart >>= fmap fromJust . S.head_
+
+{-| Take a number of samples and summarise them using 'M.measure'
+-}
+measureSamples :: Int -> PERTChart -> IO (DependencyGraph TaskID (Task (PERTEstimate Days, TaskMeasure)))
+measureSamples n chart = do
+  samples <- sampleChart chart
+  let k Task{taskDuration = Sample (Days n')} = M.Duration n'
+  measures <- S.fold_ (Map.unionWith (<>)) mempty id $ S.map (M.measure . fmap k) $ S.take n samples
+  let l taskID (deps, estimate) =
+        let m = Map.findWithDefault mempty taskID measures
+            e' = fmap (,m) estimate
+        in (deps, e')
+  return $ DependencyGraph $ Map.mapWithKey l $ unDependencyGraph chart
