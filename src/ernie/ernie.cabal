@@ -52,8 +52,6 @@ library
     Ernie.Time
     Ernie.Utils
   build-depends:
-    floyd-warshall
-  build-depends:
     aeson
     , mwc-probability
     , primitive
@@ -65,7 +63,6 @@ library
     , lens
     , profunctors
     , algebraic-graphs
-    , reflection
     , tdigest
     , optparse-applicative
     , bytestring
