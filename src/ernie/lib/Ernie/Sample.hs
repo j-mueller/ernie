@@ -14,7 +14,7 @@ import Control.Monad.Primitive (PrimMonad, PrimState)
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Ernie.Chart (DependencyGraph (..), PERTChart, TaskID)
-import Ernie.Measure (TaskMeasure)
+import Ernie.Measure (ClosedTaskID (..), TaskMeasure)
 import Ernie.Measure qualified as M
 import Ernie.PERT (PERTEstimate, pert)
 import Ernie.Task (Task (..))
@@ -49,13 +49,15 @@ sample1 chart = sampleChart chart >>= fmap fromJust . S.head_
 
 {-| Take a number of samples and summarise them using 'M.measure'
 -}
-measureSamples :: Int -> PERTChart -> IO (DependencyGraph TaskID (Task (PERTEstimate Days, TaskMeasure)))
+measureSamples :: Int -> PERTChart -> IO (DependencyGraph TaskID (Task (PERTEstimate Days, TaskMeasure)), TaskMeasure)
 measureSamples n chart = do
   samples <- sampleChart chart
   let k Task{taskDuration = Sample (Days n')} = M.Duration n'
   measures <- S.fold_ (Map.unionWith (<>)) mempty id $ S.map (M.measure . fmap k) $ S.take n samples
+
   let l taskID (deps, estimate) =
-        let m = Map.findWithDefault mempty taskID measures
+        let m = Map.findWithDefault mempty (SomeTask taskID) measures
             e' = fmap (,m) estimate
         in (deps, e')
-  return $ DependencyGraph $ Map.mapWithKey l $ unDependencyGraph chart
+      finalTaskMeasure = Map.findWithDefault mempty FinalTask measures
+  return (DependencyGraph $ Map.mapWithKey l $ unDependencyGraph chart, finalTaskMeasure)

@@ -17,7 +17,7 @@ import Ernie.PERT (estimate)
 import Ernie.Sample (measureSamples)
 
 test :: IO ()
-test = measureSamples 1000 example >>= dotFile "example.dot"
+test = measureSamples 1000 example >>= dotFile "example.dot" . fst
 
 example :: PERTChart
 example = snd $ runChart $ do

@@ -7,6 +7,7 @@
 module Ernie.Measure(
   measure,
   TaskMeasure(..),
+  ClosedTaskID(..),
   -- * Computing measures on graphs
   criticalPaths,
   CritPath(..),
@@ -19,7 +20,7 @@ import Data.Bifunctor (Bifunctor (..))
 import Data.Foldable (maximumBy)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum (..))
 import Data.Ord (comparing)
 import Data.Set qualified as Set
@@ -48,7 +49,7 @@ instance Semigroup TaskMeasure where
 instance Monoid TaskMeasure where
   mempty = TaskMeasure mempty mempty mempty mempty
 
-measure :: DependencyGraph TaskID Duration -> Map TaskID TaskMeasure
+measure :: DependencyGraph TaskID Duration -> Map ClosedTaskID TaskMeasure
 measure graph =
   let DependencyGraph (Map.map snd -> critPaths) = criticalPaths (initialAndFinalTasks graph)
       CritPath (Set.fromList -> critPathIDs) _ _ = fromMaybe (error "measure: FinalTask not found") (Map.lookup FinalTask critPaths)
@@ -59,9 +60,7 @@ measure graph =
           , tmCritPathCount = if taskID `Set.member` critPathIDs then 1 else 0
           , tmTotalCount = 1
           }
-      flt ((SomeTask t), v) = Just (t, m (SomeTask t) v)
-      flt _                 = Nothing
-  in Map.fromList $ mapMaybe flt $ Map.toList critPaths
+  in Map.mapWithKey m critPaths
 
 {- Note: Computing Measures
 
@@ -111,24 +110,20 @@ criticalPaths DependencyGraph{unDependencyGraph} =
   in DependencyGraph result
 
 data ClosedTaskID =
-  InitialTask
-  | FinalTask
+  FinalTask
   | SomeTask TaskID
   deriving stock (Eq, Ord, Show)
 
 initialAndFinalTasks :: Monoid n => DependencyGraph TaskID n -> DependencyGraph ClosedTaskID n
 initialAndFinalTasks graph =
   let DependencyGraph{unDependencyGraph} = graph
-      GraphStructure{gsInitialTasks, gsFinalTasks} = structure graph
+      GraphStructure{gsFinalTasks} = structure graph
       old = (first SomeTask . second (first (Set.map SomeTask))) <$> Map.toList unDependencyGraph
-      initialLinks = fmap (\taskID -> (SomeTask taskID, (Set.singleton InitialTask, mempty))) (Set.toList gsInitialTasks)
       finalLinks = [(FinalTask, (Set.map SomeTask gsFinalTasks, mempty))]
   in DependencyGraph
       $ Map.fromListWith (<>)
       $ old
-        ++ initialLinks
         ++ finalLinks
-        ++ [(InitialTask, (Set.empty, mempty))]
 
 newtype Duration = Duration Double
   deriving newtype (Num, Fractional, Show, Ord, Eq)

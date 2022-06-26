@@ -67,6 +67,8 @@ library
     , tdigest
     , optparse-applicative
     , bytestring
+    , fsnotify
+    , filepath
 
 executable ernie
   import:           base, project-config

@@ -6,6 +6,7 @@
 -}
 module Ernie.JSONTask(
   JSONTask
+  , JSONTaskError(..)
   , makeChart
   ) where
 
