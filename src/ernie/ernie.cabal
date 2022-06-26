@@ -45,6 +45,7 @@ library
     Ernie.CLI
     Ernie.Example
     Ernie.Export
+    Ernie.JSONTask
     Ernie.Measure
     Ernie.PERT
     Ernie.Sample
