@@ -15,8 +15,10 @@ import Control.Monad (forever, void)
 import Control.Monad.Except (liftIO, runExceptT, throwError)
 import Data.Aeson qualified as JSON
 import Data.ByteString.Lazy qualified as BSL
+import Data.TDigest qualified as TDigest
 import Ernie.Export (dotFile)
 import Ernie.JSONTask (JSONTask, JSONTaskError, makeChart)
+import Ernie.Measure (TaskMeasure (..))
 import Ernie.Sample (measureSamples)
 import Options.Applicative (Parser, auto, customExecParser, disambiguate, help,
                             helper, idm, info, long, option, prefs, short,
@@ -70,7 +72,12 @@ genChart inf outf samples = runExceptT $ do
         Left err -> throwError (FailedToGenerateChart err)
         Right c -> liftIO $ do
           putStrLn $ "  Taking " <> show samples <> " samples"
-          m <- measureSamples samples c
+          (m, TaskMeasure{tmTotalDuration}) <- measureSamples samples c
+          let showDuration d = maybe "" (take 4 . show) (TDigest.quantile d tmTotalDuration)
+          putStrLn $ "  Total project duration:"
+          putStrLn $ "    *  5%: " <> showDuration 0.05
+          putStrLn $ "    * 50%: " <> showDuration 0.5
+          putStrLn $ "    * 95%: " <> showDuration 0.95
           putStrLn $ "  Writing result to " <> outf
           dotFile outf m
 
