@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs            #-}
-{-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE GADTs              #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE TypeApplications   #-}
 {-| CLI for generating PERT charts
 -}
 module Ernie.CLI(
@@ -52,4 +53,4 @@ optionsParser =
   CliOpts
     <$> strOption (short 'f' <> long "file" <> help "Input file with tasks")
     <*> strOption (short 'o' <> long "out" <> help "Output .dot file" <> value "pert-chart.dot")
-    <*> option auto (long "num-samples" <> help "How many samples to take" <> value 1000)
+    <*> option auto (long "num-samples" <> help "How many samples to take" <> value 10_000)

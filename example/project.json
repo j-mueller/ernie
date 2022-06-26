@@ -9,11 +9,11 @@
   },
   {
     "name": "Build frontend",
-    "estimate": {
-      "min": 2.0,
-      "mode": 4.5,
-      "max": 7
-    },
+    "estimate": [
+      2.0,
+      4.5,
+      7
+    ],
     "depends": [
       "Build backend"
     ]
@@ -21,11 +21,11 @@
   {
     "name": "Write docs",
     "key": "D",
-    "estimate": {
-      "min": 3.0,
-      "mode": 4.0,
-      "max": 9.0
-    },
+    "estimate": [
+      3.0,
+      4.0,
+      9.0
+    ],
     "depends": [
       "Build backend"
     ]

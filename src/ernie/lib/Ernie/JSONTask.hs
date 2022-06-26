@@ -13,7 +13,7 @@ import Control.Monad.Except (MonadError, runExcept, throwError)
 import Control.Monad.State.Strict (MonadState, execStateT, gets, modify)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object, (.:), (.=))
 import Data.Aeson.Types (prependFailure, typeMismatch)
-import Data.Foldable (traverse_)
+import Data.Foldable (toList, traverse_)
 import Data.Map qualified as Map
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
@@ -41,6 +41,11 @@ instance FromJSON JSONEstimate where
       <$> v .: "min"
       <*> v .: "mode"
       <*> v .: "max"
+  parseJSON (Array vl) = do
+    xl <- traverse parseJSON (toList vl)
+    case xl of
+      [eMin, eMode, eMax] -> pure JSONEstimate{eMin, eMode, eMax}
+      _                   -> typeMismatch "Array with three elements" (Array vl)
   parseJSON invalid =
         prependFailure "parsing JSONEstimate failed, "
             (typeMismatch "Object" invalid)
