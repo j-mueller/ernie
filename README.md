@@ -6,7 +6,37 @@
 
 ## Usage
 
-* There is a CLI that takes task lists (in JSON) and produces PERT charts (in DOT format). The simplest way to run it is `ernie -f project.json`. See [example](https://github.com/j-mueller/ernie/tree/main/example) folder for details.
+* There is a CLI that takes task lists (in JSON) and produces PERT charts (in DOT format). The simplest way to run it is `ernie -f project.json`. The JSON file has a list of tasks with dependencies and estimates:
+
+```json
+[
+  {
+    "name": "Build backend",
+    "estimate": [0.5,1.5,]
+  },
+  {
+    "name": "Build frontend",
+    "estimate": [2.0,4.5,7],
+    "depends": ["Build backend"]
+  },
+  {
+    "name": "Write docs",
+    "key": "D",
+    "estimate": [3.0,4.0,9.0],
+    "depends": ["Build backend"]
+  },
+  {
+    "name": "Deploy",
+    "estimate": [3.0,3.5,8],
+    "depends": ["Build frontend","D"]
+  }
+]
+```
+
+The resulting chart shows the dependencies, PERT estimates, and simulation output for each task:
+
+![docs/legend.png](docs/legend.png)
+
 * You can also use it as a Haskell library, see [`Ernie.Example`](https://github.com/j-mueller/ernie/blob/main/src/ernie/lib/Ernie/Example.hs).
 
 ## Design Choices
