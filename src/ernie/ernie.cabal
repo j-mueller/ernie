@@ -63,12 +63,12 @@ library
     , transformers
     , lens
     , profunctors
-    , algebraic-graphs
     , tdigest
     , optparse-applicative
     , bytestring
     , fsnotify
     , filepath
+    , graphviz
 
 executable ernie
   import:           base, project-config

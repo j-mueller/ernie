@@ -13,6 +13,7 @@ import Data.Text (Text)
 data Task d =
   Task
     { taskName     :: Text
+    , taskGroup    :: Maybe Text
     , taskDuration :: d
     }
     deriving stock (Eq, Ord, Show, Functor, Foldable, Traversable)

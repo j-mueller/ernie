@@ -55,6 +55,7 @@ data JSONTask =
   JSONTask
     { name     :: Text
     , key      :: Maybe Text
+    , group    :: Maybe Text
     , estimate :: JSONEstimate
     , depends  :: Maybe [Text] -- this is a 'Maybe' so that the generically derived JSON parser makes this an optional field
     } deriving stock (Eq, Ord, Show, Generic)
@@ -76,10 +77,10 @@ makeChart tasks = runExcept $ fmap snd $ runChartT $ flip execStateT Map.empty $
 {-| Add a task (without recording its dependencies)
 -}
 addJSONTask :: (TaskDuration m ~ (PERTEstimate Days), MonadChart m, MonadState JSONTaskState m) => JSONTask -> m ()
-addJSONTask JSONTask{name, key, estimate=JSONEstimate{eMin, eMode, eMax}} = do
+addJSONTask JSONTask{name, key, estimate=JSONEstimate{eMin, eMode, eMax}, group} = do
   let k = fromMaybe name key
       e = PERTEstimate{pMin = eMin, pMode = eMode, pMax = eMax, pLambda = 4}
-  tid <- addTask Task{taskName = name, taskDuration = Days <$> e}
+  tid <- addTask Task{taskName = name, taskDuration = Days <$> e, taskGroup = group}
   modify (Map.insert k tid)
 
 findKey :: (MonadError JSONTaskError m, MonadState JSONTaskState m) => Text -> m TaskID

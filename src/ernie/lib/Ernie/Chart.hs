@@ -25,6 +25,7 @@ module Ernie.Chart(
   ChartT,
   MonadChart(..),
   task,
+  task',
   runChart,
   runChartT
   ) where
@@ -36,6 +37,7 @@ import Control.Monad.Trans.State.Strict (StateT (..))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Foldable (traverse_)
 import Data.Functor.Identity (Identity (..))
+import Data.GraphViz.Types (PrintDot (..))
 import Data.Kind (Type)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
@@ -49,7 +51,7 @@ import GHC.Generics (Generic)
 
 newtype TaskID = TaskID Int
   deriving stock (Eq, Ord, Show, Generic)
-  deriving newtype (ToJSON, FromJSON)
+  deriving newtype (ToJSON, FromJSON, PrintDot)
 
 {-| First task ID
 -}
@@ -111,8 +113,19 @@ task ::
   -> (TaskDuration m) -- ^ Estimated duration
   -> [TaskID] -- ^ List of tasks that the new task depends on
   -> m TaskID -- ^ The ID of the new task
-task taskName taskDuration deps = do
-  t <- addTask Task{taskName, taskDuration}
+task taskName taskDuration deps = task' taskName taskDuration deps Nothing
+
+{-| Add a task with a group
+-}
+task' ::
+  MonadChart m
+  => Text -- ^ name of the task
+  -> (TaskDuration m) -- ^ Estimated duration
+  -> [TaskID] -- ^ List of tasks that the new task depends on
+  -> Maybe Text -- ^ Group name
+  -> m TaskID -- ^ The ID of the new task
+task' taskName taskDuration deps taskGroup = do
+  t <- addTask Task{taskName, taskDuration, taskGroup}
   traverse_ (t `dependsOn`) deps
   pure t
 
