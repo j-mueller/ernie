@@ -7,22 +7,27 @@
 module Ernie.Export(
   DotNodeContent(..),
   dot,
-  dotFile,
-  algebraicGraph,
-  defaultStyle
+  dotFile
   ) where
 
-import Algebra.Graph qualified as AG
-import Algebra.Graph.Export.Dot (Attribute (..), Style (..))
-import Algebra.Graph.Export.Dot qualified as Dot
+import Control.Monad (when)
+import Data.Foldable (traverse_)
+import Data.GraphViz.Attributes (bgColor, filled, style, textLabel)
+import Data.GraphViz.Attributes.Colors.X11 qualified as Colors
+import Data.GraphViz.Attributes.Complete qualified as A
+import Data.GraphViz.Types qualified as GVT
+import Data.GraphViz.Types.Generalised (DotGraph (..))
+import Data.GraphViz.Types.Monadic qualified as GV
 import Data.Map qualified as Map
 import Data.Monoid (Sum (..))
+import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
 import Data.TDigest qualified as TDigest
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Text.IO qualified as TIO
-import Ernie.Chart (DependencyGraph (..), TaskID)
+import Data.Text.Lazy qualified as TL
+import Ernie.Chart (DependencyGraph (..), TaskID (..))
 import Ernie.Measure (TaskMeasure (..))
 import Ernie.PERT (PERTEstimate (..))
 import Ernie.Sample (Sample (..))
@@ -32,84 +37,115 @@ import Ernie.Time (Days (..))
 {-| A DOT representation of the dependency graph.
 -}
 dot :: DotNodeContent e => Text -> DependencyGraph TaskID (Task e) -> Text
-dot nm tg = Dot.export (defaultStyle tg nm) (algebraicGraph tg)
+dot nm = TL.toStrict . GVT.printDotGraph . dot' nm
+
+groups :: DependencyGraph TaskID (Task e) -> Map.Map (Maybe Text) (Seq.Seq (TaskID, Set.Set TaskID, Task e))
+groups =
+  let mkGroup (taskID, (deps, task@Task{taskGroup})) = (taskGroup, Seq.singleton (taskID, deps, task))
+  in Map.fromListWith (<>) . fmap mkGroup . Map.toList . unDependencyGraph
+
+insertGroup :: DotNodeContent e => Maybe Text -> Seq.Seq (TaskID, Set.Set TaskID, Task e) -> GV.DotM TaskID ()
+insertGroup groupName xs = do
+  let withGroup m = case groupName of
+        Nothing -> m
+        Just t -> GV.cluster (GV.Str $ TL.fromStrict t) $ do
+          m
+          GV.graphAttrs [textLabel $ TL.fromStrict t]
+      allTasksInGroup = foldMap (\(i, _, _) -> Set.singleton i) xs
+
+  withGroup $ flip traverse_ xs $ \(i, deps, Task{taskName, taskDuration}) -> do
+    let lbl = A.Label $ A.RecordLabel $ A.FieldLabel (TL.fromStrict taskName) : getContent taskDuration
+    GV.graphAttrs
+      [ style $ A.SItem A.Dashed []
+      , A.LabelJust A.JLeft
+      ]
+    GV.node i [lbl]
+    flip traverse_ deps $ \source -> do
+      when (source `Set.member` allTasksInGroup) (GV.edge source i [])
+  flip traverse_ xs $ \(i, deps, _) -> do
+    flip traverse_ deps $ \source -> do
+        when (not (source `Set.member` allTasksInGroup)) (GV.edge source i [])
+
+dot' :: DotNodeContent e => Text -> DependencyGraph TaskID (Task e) -> DotGraph TaskID
+dot' (TL.fromStrict -> nm) g = GV.digraph (GV.Str nm) $ do
+  GV.graphAttrs [ A.RankDir A.FromLeft ]
+  GV.nodeAttrs
+    [ A.Shape A.Record
+    , style filled
+    , bgColor Colors.Gray93
+    , A.Height 0.1
+    ]
+  traverse_ (uncurry insertGroup) (Map.toList $ groups g)
 
 {-| Write the dependency graph to a DOT file
 -}
 dotFile :: DotNodeContent e => FilePath -> DependencyGraph TaskID (Task e) -> IO ()
 dotFile fp = TIO.writeFile fp . dot ""
 
-{-| Convert the task graph to a 'Algebra.Graph.Graph' of task IDs
--}
-algebraicGraph :: DependencyGraph TaskID e -> AG.Graph TaskID
-algebraicGraph DependencyGraph{unDependencyGraph} =
-  let vs = Set.toList (Map.keysSet unDependencyGraph)
-      es = Map.toList unDependencyGraph >>= \(a, (Set.toList -> bs, _)) -> (,a) <$> bs
-  in AG.edges es <> AG.vertices vs
-
 {-| Types that can be shown inside a DOT graph node
 -}
 class DotNodeContent e where
-  getContent :: e -> Text
+  getContent :: e -> [A.RecordField]
 
 daysToText :: Days -> Text
 daysToText (Days n) = Text.pack (take 4 $ show n) <> "d"
 
 instance DotNodeContent Days where
-  getContent = daysToText
+  getContent = return . A.FieldLabel . TL.fromStrict . daysToText
 
 instance DotNodeContent d => DotNodeContent (Sample d) where
   getContent (Sample s) = getContent s
 
 instance DotNodeContent d => DotNodeContent (PERTEstimate d) where
   getContent PERTEstimate{pMin, pMode, pMax} =
-    "{" <> getContent pMin <> "|" <> getContent pMode <> "|" <> getContent pMax <> "}"
+    [A.FlipFields
+      (getContent pMin <> getContent pMode <> getContent pMax)]
 
 instance DotNodeContent () where
-  getContent () = ""
+  getContent () = []
 
 instance DotNodeContent TaskMeasure where
   getContent TaskMeasure{tmCritPathCount = Sum c, tmTotalCount = Sum t, tmTotalDuration} =
     let perc = (fromIntegral c / fromIntegral t) * (100 :: Double)
-        cp = Text.pack $ "CP: " <> (take 4 $ show perc) <> "%"
+        cp = A.FieldLabel $ TL.fromStrict $ Text.pack $ "CP: " <> (take 4 $ show perc) <> "%"
         five = TDigest.quantile 0.05 tmTotalDuration
         fifty = TDigest.quantile 0.5 tmTotalDuration
         ninetyFive = TDigest.quantile 0.95 tmTotalDuration
-        sw = maybe "" (Text.pack . take 4 . show)
-        dur = "{" <> sw five <> "d |" <> sw fifty <> "d | " <> sw ninetyFive <> "d }"
-    in cp <> "|" <> dur
+        sw = A.FieldLabel . TL.fromStrict . maybe "" (Text.pack . take 4 . show)
+        dur = A.FlipFields [sw five, sw fifty, sw ninetyFive]
+    in [cp, dur]
 
 {-| Stack two graph contents vertically
 -}
 instance (DotNodeContent a, DotNodeContent b) => DotNodeContent (a, b) where
-  getContent (a, b) = getContent a <> "|" <> getContent b
+  getContent (a, b) = getContent a <> getContent b
 
 {-| Default style for exporting taks graphs to DOT files
 -}
-defaultStyle :: DotNodeContent e => DependencyGraph TaskID (Task e) -> Text -> Style TaskID Text
-defaultStyle DependencyGraph{unDependencyGraph} graphName =
-  let tn i = maybe (Text.pack $ show i) (taskName . snd) (Map.lookup i unDependencyGraph)
-      cnt i = maybe "" (getContent . taskDuration . snd) (Map.lookup i unDependencyGraph)
-      content i =
-        tn i <> "|" <> cnt i
-      labels i = ["label" := content i]
-  in Style
-      { graphName
-      , preamble =
-          [ "node [shape=Mrecord]" -- This allows us to structure the records with | and {}
-          , "rankdir=LR"
-          ]
-      , graphAttributes = []
-      , defaultVertexAttributes =
-          [ "color" := "darkgray"
-          , "fillcolor" := "grey93"
-          , "style" := "filled"
-          , "height" := ".1"
-          , "shape" := "record" -- set the shape again to avoid rounded corners
-          ]
-      , defaultEdgeAttributes = []
-      , vertexName = Text.pack . show
-      , vertexAttributes = labels
-      , edgeAttributes = \_ _ -> []
-      , attributeQuoting = Dot.DoubleQuotes
-      }
+-- defaultStyle :: DotNodeContent e => DependencyGraph TaskID (Task e) -> Text -> Style TaskID Text
+-- defaultStyle DependencyGraph{unDependencyGraph} graphName =
+--   let tn i = maybe (Text.pack $ show i) (taskName . snd) (Map.lookup i unDependencyGraph)
+--       cnt i = maybe "" (getContent . taskDuration . snd) (Map.lookup i unDependencyGraph)
+--       content i =
+--         tn i <> "|" <> cnt i
+--       labels i = ["label" := content i]
+--   in Style
+--       { graphName
+--       , preamble =
+--           [ "node [shape=Mrecord]" -- This allows us to structure the records with | and {}
+--           , "rankdir=LR"
+--           ]
+--       , graphAttributes = []
+--       , defaultVertexAttributes =
+--           [ "color" := "darkgray"
+--           , "fillcolor" := "grey93"
+--           , "style" := "filled"
+--           , "height" := ".1"
+--           , "shape" := "record" -- set the shape again to avoid rounded corners
+--           ]
+--       , defaultEdgeAttributes = []
+--       , vertexName = Text.pack . show
+--       , vertexAttributes = labels
+--       , edgeAttributes = \_ _ -> []
+--       , attributeQuoting = Dot.DoubleQuotes
+--       }
