@@ -49,16 +49,16 @@ insertGroup groupName xs = do
   let withGroup m = case groupName of
         Nothing -> m
         Just t -> GV.cluster (GV.Str $ TL.fromStrict t) $ do
+          GV.graphAttrs
+            [ textLabel $ TL.fromStrict t
+            , style $ A.SItem A.Dashed []
+            , A.LabelJust A.JLeft
+            ]
           m
-          GV.graphAttrs [textLabel $ TL.fromStrict t]
       allTasksInGroup = foldMap (\(i, _, _) -> Set.singleton i) xs
 
   withGroup $ flip traverse_ xs $ \(i, deps, Task{taskName, taskDuration}) -> do
     let lbl = A.Label $ A.RecordLabel $ A.FieldLabel (TL.fromStrict taskName) : getContent taskDuration
-    GV.graphAttrs
-      [ style $ A.SItem A.Dashed []
-      , A.LabelJust A.JLeft
-      ]
     GV.node i [lbl]
     flip traverse_ deps $ \source -> do
       when (source `Set.member` allTasksInGroup) (GV.edge source i [])

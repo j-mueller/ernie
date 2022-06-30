@@ -6,31 +6,38 @@
 
 ## Usage
 
-* There is a CLI that takes task lists (in JSON) and produces PERT charts (in DOT format). The simplest way to run it is `ernie -f project.json`. The JSON file has a list of tasks with dependencies and estimates:
+* There is a CLI that takes task lists (in YAML) and produces PERT charts (in DOT format). The simplest way to run it is `ernie -f project.yaml`. The YAML file has a list of tasks with dependencies and estimates:
 
-```json
-[
-  {
-    "name": "Build backend",
-    "estimate": [0.5,1.5,]
-  },
-  {
-    "name": "Build frontend",
-    "estimate": [2.0,4.5,7],
-    "depends": ["Build backend"]
-  },
-  {
-    "name": "Write docs",
-    "key": "D",
-    "estimate": [3.0,4.0,9.0],
-    "depends": ["Build backend"]
-  },
-  {
-    "name": "Deploy",
-    "estimate": [3.0,3.5,8],
-    "depends": ["Build frontend","D"]
-  }
-]
+```yaml
+- name: Build backend
+  estimate: [0.5, 1.5, 4]
+- name: Build frontend
+  estimate: [2, 4.5, 7]
+  depends:
+    - Build backend
+  group: Phase 1
+- name: Write docs (1)
+  key: D
+  estimate: [3, 4, 9]
+  depends:
+    - Build backend
+  group: Phase 1
+- name: User testing
+  estimate: [3, 5, 8]
+  depends:
+    - Build frontend
+  group: Phase 1
+- name: Write docs (2)
+  estimate: [2, 4, 9]
+  depends:
+    - D
+    - Build frontend
+  group: Phase 1
+- name: Deploy
+  estimate: [3, 3.5, 8]
+  depends:
+    - User testing
+    - Write docs (2)
 ```
 
 The resulting chart shows the dependencies, PERT estimates, and simulation output for each task:
