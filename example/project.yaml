@@ -4,13 +4,26 @@
   estimate: [2, 4.5, 7]
   depends:
     - Build backend
-- name: Write docs
+  group: Phase 1
+- name: Write docs (1)
   key: D
   estimate: [3, 4, 9]
   depends:
     - Build backend
+  group: Phase 1
+- name: User testing
+  estimate: [3, 5, 8]
+  depends:
+    - Build frontend
+  group: Phase 1
+- name: Write docs (2)
+  estimate: [2, 4, 9]
+  depends:
+    - D
+    - Build frontend
+  group: Phase 1
 - name: Deploy
   estimate: [3, 3.5, 8]
   depends:
-    - Build frontend
-    - D
+    - User testing
+    - Write docs (2)
