@@ -13,9 +13,10 @@ module Ernie.CLI(
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever, void)
 import Control.Monad.Except (liftIO, runExceptT, throwError)
-import Data.Aeson qualified as JSON
 import Data.ByteString.Lazy qualified as BSL
 import Data.TDigest qualified as TDigest
+import Data.YAML.Aeson qualified as Yaml
+import Data.YAML.Event (Pos)
 import Ernie.Export (dotFile)
 import Ernie.JSONTask (JSONTask, JSONTaskError, makeChart)
 import Ernie.Measure (TaskMeasure (..))
@@ -50,12 +51,12 @@ runMain = do
     else genChart inFile outFile numSamples >>= either exitOnFailure pure
 
 data GenChartError =
-  FailedToReadTaskList FilePath
+  FailedToReadTaskList FilePath Pos String
   | FailedToGenerateChart JSONTaskError
 
 printError :: GenChartError -> IO ()
 printError = \case
-  FailedToReadTaskList fp -> putStrLn $ "Failed to read task list from " <> fp
+  FailedToReadTaskList fp pos err -> putStrLn $ "Failed to read task list from " <> fp <> ". Error at " <> show pos <> ": " <> err
   FailedToGenerateChart err -> putStrLn $ "Failed to generate chart: " <> show err
 
 exitOnFailure :: GenChartError -> IO ()
@@ -63,10 +64,10 @@ exitOnFailure e = printError e >> exitFailure
 
 genChart :: FilePath -> FilePath -> Int -> IO (Either GenChartError ())
 genChart inf outf samples = runExceptT $ do
-  tasks <- liftIO (JSON.decode @[JSONTask] <$> BSL.readFile inf)
+  tasks <- liftIO (Yaml.decode1 @[JSONTask] <$> BSL.readFile inf)
   case tasks of
-    Nothing -> throwError $ FailedToReadTaskList inf
-    Just ts -> do
+    Left (pos, err) -> throwError $ FailedToReadTaskList inf pos err
+    Right ts -> do
       liftIO (putStrLn $ "Generating chart for " <> inf <> " with " <> show (length ts) <> " tasks")
       case makeChart ts of
         Left err -> throwError (FailedToGenerateChart err)

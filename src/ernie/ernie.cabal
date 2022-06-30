@@ -69,6 +69,8 @@ library
     , fsnotify
     , filepath
     , graphviz
+    , HsYAML
+    , HsYAML-aeson
 
 executable ernie
   import:           base, project-config

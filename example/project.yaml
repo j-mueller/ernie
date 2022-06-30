@@ -1,0 +1,16 @@
+- name: Build backend
+  estimate: [0.5, 1.5, 4]
+- name: Build frontend
+  estimate: [2, 4.5, 7]
+  depends:
+    - Build backend
+- name: Write docs
+  key: D
+  estimate: [3, 4, 9]
+  depends:
+    - Build backend
+- name: Deploy
+  estimate: [3, 3.5, 8]
+  depends:
+    - Build frontend
+    - D

@@ -1,14 +1,23 @@
-digraph 
-{
-node [shape=Mrecord]
-rankdir=LR
-  node [color="darkgray" fillcolor="grey93" style="filled" height=".1" shape="record"]
-  "TaskID 0" [label="Build backend|{0.5d|1.5d|4.0d}|CP: 100.%|{0.83d |1.70d | 2.88d }"]
-  "TaskID 1" [label="Build frontend|{2.0d|4.5d|7.0d}|CP: 46.5%|{4.36d |6.22d | 8.10d }"]
-  "TaskID 2" [label="Write docs|{3.0d|4.0d|9.0d}|CP: 53.4%|{4.66d |6.31d | 8.58d }"]
-  "TaskID 3" [label="Deploy|{3.0d|3.5d|8.0d}|CP: 100.%|{9.00d |10.9d | 13.3d }"]
-  "TaskID 0" -> "TaskID 1"
-  "TaskID 0" -> "TaskID 2"
-  "TaskID 1" -> "TaskID 3"
-  "TaskID 2" -> "TaskID 3"
+digraph "" {
+    graph [rankdir=LR];
+    node [shape=record
+         ,style=filled
+         ,bgcolor=gray93
+         ,height=0.1];
+    graph [style=dashed
+          ,labeljust=l];
+    3 [label="Deploy|{3.0d|3.5d|8.0d}|CP:\ 100.%|{8.93|10.9|13.3}"];
+    1 -> 3;
+    2 -> 3;
+    graph [style=dashed
+          ,labeljust=l];
+    2 [label="Write\ docs|{3.0d|4.0d|9.0d}|CP:\ 53.0%|{4.64|6.30|8.56}"];
+    0 -> 2;
+    graph [style=dashed
+          ,labeljust=l];
+    1 [label="Build\ frontend|{2.0d|4.5d|7.0d}|CP:\ 46.9%|{4.40|6.22|8.12}"];
+    0 -> 1;
+    graph [style=dashed
+          ,labeljust=l];
+    0 [label="Build\ backend|{0.5d|1.5d|4.0d}|CP:\ 100.%|{0.82|1.69|2.87}"];
 }
