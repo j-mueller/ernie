@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               floyd-warshall
-version:            0.1.0.0
+version:            0.2.0.0
 
 synopsis: Implementation of the floyd-warshall algorithm
 description: Implementation of the floyd-warshall algorithm in pure Haskell. Includes vectors and matrices with statically checked sizes. Could probably be faster.
@@ -9,13 +9,13 @@ bug-reports: https://github.com/j-mueller/ernie
 license: BSD-3-Clause
 author:             Jann Müller
 maintainer:         j-mueller@users.noreply.github.com
-copyright: (c) 2022 Jann Müller
+copyright: (c) 2024 Jann Müller
 
 category: algorithms
 extra-source-files: CHANGELOG.md
 
 common base
-  build-depends: base ^>=4.14.3.0
+  build-depends: base >=4.14 && < 5
 
 common project-config
   default-language:     Haskell2010

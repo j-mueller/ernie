@@ -86,7 +86,7 @@ instance (Ord a, Num a) => Semiring (Real_ (Tropical a)) where
     (Tropical a, Tropical b) -> Tropical (a + b)
     _                        -> Infinity
 
-instance (Ord a, Eq a, Num a, Fractional a) => StarSemiring (Real_ (Tropical a)) where
+instance (Ord a, Fractional a) => StarSemiring (Real_ (Tropical a)) where
   star _ = one
 
 type RT d = Real_ (Tropical d)

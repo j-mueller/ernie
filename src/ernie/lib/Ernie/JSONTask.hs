@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE NamedFieldPuns   #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators    #-}
 {-| JSON format for tasks
 -}
 module Ernie.JSONTask(
@@ -76,7 +76,7 @@ makeChart tasks = runExcept $ fmap snd $ runChartT $ flip execStateT Map.empty $
 
 {-| Add a task (without recording its dependencies)
 -}
-addJSONTask :: (TaskDuration m ~ (PERTEstimate Days), MonadChart m, MonadState JSONTaskState m) => JSONTask -> m ()
+addJSONTask :: (TaskDuration m ~ PERTEstimate Days, MonadChart m, MonadState JSONTaskState m) => JSONTask -> m ()
 addJSONTask JSONTask{name, key, estimate=JSONEstimate{eMin, eMode, eMax}, group} = do
   let k = fromMaybe name key
       e = PERTEstimate{pMin = eMin, pMode = eMode, pMax = eMax, pLambda = 4}
