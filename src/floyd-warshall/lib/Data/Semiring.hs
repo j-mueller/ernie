@@ -13,7 +13,6 @@ module Data.Semiring(
   Compact(..)
   ) where
 
-import Control.Applicative (liftA2)
 import Data.Functor.Identity (Identity (..))
 
 import Prelude as P

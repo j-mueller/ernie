@@ -2,6 +2,7 @@ name: ci-linux
 on:
   pull_request:
   push:
+    branches: ["main"]
     paths:
       - '.github/workflows/ci-linux.yaml'
       - 'cabal.project'
@@ -24,15 +25,15 @@ jobs:
             ~/.cabal
           key: cabal
 
-      - uses: haskell/actions/setup@v1
+      - uses: haskell-actions/setup@v2.7.9
         with:
-          ghc-version: '8.10' # Resolves to the latest point release of GHC 8.10
-          cabal-version: '3.6.2.0' # Exact version of Cabal
+          ghc-version: '9.8.4'
+          cabal-version: '3.12.1.0'
 
       - name: Haskell tools
         run: cabal install --overwrite-policy=always c2hs stylish-haskell
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: stylish-haskell
         run: |
