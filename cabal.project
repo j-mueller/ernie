@@ -1,6 +1,7 @@
-index-state: 2024-11-14T00:00:00Z
+index-state: 2025-02-14T00:00:00Z
 
 packages:
   ./src/ernie
   ./src/floyd-warshall
 
+with-compiler: ghc-9.8.4

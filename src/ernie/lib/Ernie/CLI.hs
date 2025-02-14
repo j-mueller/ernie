@@ -12,7 +12,8 @@ module Ernie.CLI(
 
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever, void)
-import Control.Monad.Except (liftIO, runExceptT, throwError)
+import Control.Monad.Except (runExceptT, throwError)
+import Control.Monad.IO.Class (MonadIO (..))
 import Data.ByteString.Lazy qualified as BSL
 import Data.TDigest qualified as TDigest
 import Data.YAML.Aeson qualified as Yaml

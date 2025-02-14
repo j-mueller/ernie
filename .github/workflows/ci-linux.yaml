@@ -26,8 +26,8 @@ jobs:
 
       - uses: haskell/actions/setup@v1
         with:
-          ghc-version: '8.10' # Resolves to the latest point release of GHC 8.10
-          cabal-version: '3.6.2.0' # Exact version of Cabal
+          ghc-version: '9.8.4'
+          cabal-version: '3.12.1.0'
 
       - name: Haskell tools
         run: cabal install --overwrite-policy=always c2hs stylish-haskell
