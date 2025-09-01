@@ -2,14 +2,13 @@
   description = "Ernie project planner";
 
   inputs = {
-    iogx = {
-      url = "github:input-output-hk/iogx";
+    haskell-nix = {
+      url = "github:input-output-hk/haskell.nix";
       inputs.hackage.follows = "hackage";
-      inputs.haskell-nix.follows = "haskell-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixpkgs.follows = "haskell-nix/nixpkgs-2405";
+
+    nixpkgs.follows = "haskell-nix/nixpkgs";
 
     hackage = {
       url = "github:input-output-hk/hackage.nix";
@@ -21,22 +20,11 @@
       inputs.hackage.follows = "hackage";
     };
 
-    cardano-cli = {
-      url = "github:intersectmbo/cardano-cli?ref=cardano-cli-10.1.0.0";
-    };
-
-    n2c = {
-      url = "github:nlewo/nix2container";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = inputs: inputs.iogx.lib.mkFlake {
-    inherit inputs;
-    repoRoot = ./.;
-    outputs = import ./nix/outputs.nix;
-    systems = [ "x86_64-linux" ]; # "x86_64-darwin" ];
-  };
+  outputs = inputs: inputs.flake-utils.lib.eachDefaultSystem (system:
+    import ./nix/outputs.nix { inherit inputs system; }
+  );
 
   nixConfig = {
     extra-substituters = [
@@ -50,6 +38,7 @@
       "cache.ml42.de:RKmSRP9TOc87nh9FZCM/b/pMIE3kBLEeIe71ReCBwRM="
     ];
     allow-import-from-derivation = true;
+    accept-flake-config = true;
   };
 
 }

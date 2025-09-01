@@ -1,26 +1,32 @@
-{ repoRoot, inputs, pkgs, lib, system }:
+{ inputs, pkgs, lib }:
 
 let
-  sha256map = {
-  };
+  cabalProject = pkgs.haskell-nix.cabalProject' (
+    
+    { config, pkgs, ... }:
 
-  modules = [{ }];
+    {
+      name = "ernie";
 
-  cabalProject = pkgs.haskell-nix.cabalProject' {
-    inherit modules sha256map;
-    src = ../.;
-    name = "ernie";
-    compiler-nix-name = "ghc982";
-    # index-state = "2024-10-16T00:00:00Z";
-    inputMap = {
-    };
-    shell.withHoogle = false;
-  };
+      compiler-nix-name = lib.mkDefault "ghc984";
 
-  project = lib.iogx.mkHaskellProject {
-    inherit cabalProject;
-    shellArgs = repoRoot.nix.shell;
-  };
+      src = lib.cleanSource ../.;
+
+      flake.variants = {
+        ghc984 = {}; # Alias for the default variant
+        ghc966.compiler-nix-name = "ghc966";
+        ghc9102.compiler-nix-name = "ghc9102";
+        ghc9122.compiler-nix-name = "ghc9122";
+      };
+
+      inputMap = { };
+
+      modules = [{
+        packages = {};
+      }];
+    }
+  );
 
 in
-project
+
+cabalProject
