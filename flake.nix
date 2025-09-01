@@ -15,10 +15,14 @@
       flake = false;
     };
 
-    haskell-nix = {
-      url = "github:input-output-hk/haskell.nix";
-      inputs.hackage.follows = "hackage";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
     };
+
+    systems.url = "github:nix-systems/default";
+    
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
 
   };
 
