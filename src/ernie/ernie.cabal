@@ -1,44 +1,40 @@
 cabal-version:      2.4
 name:               ernie
 version:            0.2.0.0
-
-synopsis: Project planning with PERT estimates
-bug-reports: https://github.com/j-mueller/ernie
-license: BSD-3-Clause
+synopsis:           Project planning with PERT estimates
+bug-reports:        https://github.com/j-mueller/ernie
+license:            BSD-3-Clause
 author:             Jann Müller
 maintainer:         j-mueller@users.noreply.github.com
-copyright: (c) 2024 Jann Müller
-category: planning
+copyright:          (c) 2024 Jann Müller
+category:           planning
 extra-source-files: CHANGELOG.md
 
 common base
-  build-depends: base >=4.14 && < 5
+  build-depends: base >=4.14 && <5
 
 common project-config
-  default-language:     Haskell2010
+  default-language:   Haskell2010
+  default-extensions:
+    DeriveAnyClass
+    DeriveFoldable
+    DeriveFunctor
+    DeriveGeneric
+    DeriveTraversable
+    DerivingStrategies
+    GeneralizedNewtypeDeriving
+    ImportQualifiedPost
+    NumericUnderscores
+    OverloadedStrings
 
-  default-extensions:   GeneralizedNewtypeDeriving
-                        ImportQualifiedPost
-                        OverloadedStrings
-                        NumericUnderscores
-                        DerivingStrategies
-                        DeriveGeneric
-                        DeriveFunctor
-                        DeriveFoldable
-                        DeriveTraversable
-                        DeriveAnyClass
-
-  ghc-options:          -Wall
-                        -Wcompat
-                        -Wincomplete-record-updates
-                        -Wincomplete-uni-patterns
-                        -Wpartial-fields
-                        -Wredundant-constraints
-                        -Wunused-packages
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-record-updates
+    -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
+    -Wunused-packages
 
 library
-  import: base, project-config
-  hs-source-dirs: lib
+  import:          base, project-config
+  hs-source-dirs:  lib
   exposed-modules:
     Ernie
     Ernie.Chart
@@ -52,28 +48,29 @@ library
     Ernie.Task
     Ernie.Time
     Ernie.Utils
+
   build-depends:
-    aeson
-    , mwc-probability
-    , primitive
-    , containers
-    , text
-    , streaming
-    , mtl
-    , transformers
-    , lens
-    , profunctors
-    , tdigest
-    , optparse-applicative
+    , aeson
     , bytestring
-    , fsnotify
+    , containers
     , filepath
+    , fsnotify
     , graphviz
     , HsYAML
     , HsYAML-aeson
+    , lens
+    , mtl
+    , mwc-probability
+    , optparse-applicative
+    , primitive
+    , profunctors
+    , streaming
+    , tdigest
+    , text
+    , transformers
 
-executable ernie
-  import:           base, project-config
-  main-is:          Main.hs
-  hs-source-dirs:   app
-  build-depends: ernie
+executable ernie-cli
+  import:         base, project-config
+  main-is:        Main.hs
+  hs-source-dirs: app
+  build-depends:  ernie

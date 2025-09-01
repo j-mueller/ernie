@@ -48,6 +48,6 @@ jobs:
     #     key: cabal-${{ hashFiles('cabal.project') }}
 
     # We currently do not have a default target
-    - name: nix build command-line apps and container
+    - name: nix flake check
       run: |
-        nix build --accept-flake-config .#ernie
+        nix flake check --accept-flake-config
