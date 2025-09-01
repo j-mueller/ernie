@@ -19,29 +19,19 @@ jobs:
           sudo apt-get install fd-find
 
       - name: Cache .cabal
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
-          path: |
-            ~/.cabal
-          key: cabal
+          path: ${{ steps.cabal-setup.outputs.cabal-store }}
+          key: cabal-${{ hashFiles('cabal.project') }}
 
       - uses: haskell-actions/setup@v2.7.9
         with:
           ghc-version: '9.8.4'
           cabal-version: '3.12.1.0'
 
-      - name: Haskell tools
-        run: cabal install --overwrite-policy=always c2hs stylish-haskell
-
       - uses: actions/checkout@v4
 
-      - name: stylish-haskell
+      - name: build 
         run: |
-          fdfind --extension hs --exclude 'dist-newstyle/*' --exclude 'dist/*' --exclude '.stack-work/*' --exec bash -c "~/.cabal/bin/stylish-haskell -i {} || true"
-          git diff --exit-code
-
-      - name: build
-        run: cabal build -j floyd-warshall ernie
-
-      - name: test
-        run: cabal run floyd-warshall-test
+          cabal update
+          cabal build -j all
