@@ -50,4 +50,4 @@ jobs:
     # We currently do not have a default target
     - name: nix flake check
       run: |
-        nix flake check --accept-flake-config
+        nix develop --accept-flake-config --command cabal build ernie-cli
