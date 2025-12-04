@@ -79,6 +79,7 @@ genChart inf outf samples = runExceptT $ do
           putStrLn $ "  Total project duration:"
           putStrLn $ "    *  5%: " <> showDuration 0.05
           putStrLn $ "    * 50%: " <> showDuration 0.5
+          putStrLn $ "    * 80%: " <> showDuration 0.8
           putStrLn $ "    * 95%: " <> showDuration 0.95
           putStrLn $ "  Writing result to " <> outf
           dotFile outf m
