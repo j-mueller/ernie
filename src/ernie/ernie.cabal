@@ -49,6 +49,10 @@ library
     Ernie.Time
     Ernie.Utils
 
+    Sesame.Event
+    Sesame.Project
+    Sesame.Relation
+    Sesame.Var
   build-depends:
     , aeson
     , bytestring
@@ -68,6 +72,7 @@ library
     , tdigest
     , text
     , transformers
+    , time
 
 executable ernie-cli
   import:         base, project-config
