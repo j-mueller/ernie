@@ -52,6 +52,10 @@ library
     Ernie.Task
     Ernie.Time
     Ernie.Utils
+    Sesame.Event
+    Sesame.Project
+    Sesame.Relation
+    Sesame.Var
   build-depends:
     aeson
     , mwc-probability
@@ -71,6 +75,7 @@ library
     , graphviz
     , HsYAML
     , HsYAML-aeson
+    , time
 
 executable ernie
   import:           base, project-config
