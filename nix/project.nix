@@ -1,0 +1,41 @@
+{ inputs, pkgs, lib }:
+
+let
+  cabalProject = pkgs.haskell-nix.cabalProject' (
+    
+    { config, pkgs, ... }:
+
+    {
+      name = "ernie";
+
+      compiler-nix-name = lib.mkDefault "ghc984";
+
+      src = lib.cleanSource ../.;
+
+      flake.variants = {
+        ghc984 = {}; # Alias for the default variant
+        #ghc984.compiler-nix-name = "ghc984";
+        #ghc9102.compiler-nix-name = "ghc9102";
+        #ghc9122.compiler-nix-name = "ghc9122";
+      };
+
+      # inputMap = { "https://chap.intersectmbo.org/" = inputs.CHaP; };
+
+      cabalProjectLocal = ''
+        package *
+          ghc-options=-Werror
+      '';
+      modules = [{
+        packages = {
+          ernie.ghcOptions = [ "-Werror" ];
+          floyd-warshall.ghcOptions = [ "-Werror" ];
+        };
+      }      
+      ];
+    }
+  );
+
+in
+
+cabalProject
+
