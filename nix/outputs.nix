@@ -22,6 +22,14 @@ let
   };
 
   projectFlake = project.flake {};
+  apps =
+    let
+      baseApps = projectFlake.apps;
+    in
+      baseApps
+      // {
+            ernie-cli = baseApps."ernie:exe:ernie-cli";
+          };
 
   defaultHydraJobs = { 
     # ghc966 = projectFlake.hydraJobs.ghc966;
@@ -46,5 +54,6 @@ in
 {
   inherit packages;
   inherit devShells;
+  inherit apps;
   inherit hydraJobs;
 }
