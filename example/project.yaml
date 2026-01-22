@@ -22,8 +22,11 @@
     - D
     - Build frontend
   group: Phase 1
+- name: Phase 1 complete
+  depends:
+    - Write docs (2)
+    - User testing
 - name: Deploy
   estimate: [3, 3.5, 8]
   depends:
-    - User testing
-    - Write docs (2)
+    - Phase 1 complete

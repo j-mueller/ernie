@@ -47,13 +47,13 @@ import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text (Text)
 import Ernie.PERT (PERTEstimate)
-import Ernie.Task (Task (..))
+import Ernie.Task (TType (..), Task (..))
 import Ernie.Time (Days)
 import GHC.Generics (Generic)
 
 newtype TaskID = TaskID Int
     deriving stock (Eq, Ord, Show, Generic)
-    deriving newtype (ToJSON, FromJSON, PrintDot)
+    deriving newtype (ToJSON, FromJSON, PrintDot, Num)
 
 -- | First task ID
 task0 :: TaskID
@@ -115,7 +115,7 @@ task ::
     [TaskID] ->
     -- | The ID of the new task
     m TaskID
-task taskName taskDuration deps = task' taskName taskDuration deps Nothing
+task taskName taskDuration deps = task' taskName taskDuration deps Nothing TTask
 
 -- | Add a task with a group
 task' ::
@@ -128,9 +128,11 @@ task' ::
     [TaskID] ->
     -- | Group name
     Maybe Text ->
+    -- | Task type
+    TType ->
     -- | The ID of the new task
     m TaskID
-task' taskName taskDuration deps taskGroup = do
+task' taskName taskDuration deps taskGroup taskType = do
     t <- addTask Task{taskName, taskDuration, taskGroup}
     traverse_ (t `dependsOn`) deps
     pure t

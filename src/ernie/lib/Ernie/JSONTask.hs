@@ -21,7 +21,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Ernie.Chart (MonadChart (..), PERTChart, TaskID, runChartT)
 import Ernie.PERT (PERTEstimate (..))
-import Ernie.Task (Task (..))
+import Ernie.Task (TType (..), Task (..))
 import Ernie.Time (Days (..))
 import GHC.Generics (Generic)
 
@@ -77,12 +77,17 @@ makeChart tasks = runExcept $ fmap snd $ runChartT $ flip execStateT Map.empty $
     traverse_ addJSONTask tasks
     traverse_ addJSONTaskDependencies tasks
 
+mkEstimate :: JSONEstimate -> PERTEstimate Days
+mkEstimate JSONEstimate{eMin, eMode, eMax} =
+    let e = PERTEstimate{pMin = eMin, pMode = eMode, pMax = eMax, pLambda = 4}
+     in Days <$> e
+
 -- | Add a task (without recording its dependencies)
 addJSONTask :: (TaskDuration m ~ Maybe (PERTEstimate Days), MonadChart m, MonadState JSONTaskState m) => JSONTask -> m ()
-addJSONTask JSONTask{name, key, estimate = Just JSONEstimate{eMin, eMode, eMax}, group} = do
+addJSONTask JSONTask{name, key, estimate, group} = do
     let k = fromMaybe name key
-        e = PERTEstimate{pMin = eMin, pMode = eMode, pMax = eMax, pLambda = 4}
-    tid <- addTask Task{taskName = name, taskDuration = Just (Days <$> e), taskGroup = group}
+        taskType = maybe TEvent (const TTask) estimate
+    tid <- addTask Task{taskName = name, taskDuration = mkEstimate <$> estimate, taskGroup = group, taskType}
     modify (Map.insert k tid)
 
 findKey :: (MonadError JSONTaskError m, MonadState JSONTaskState m) => Text -> m TaskID

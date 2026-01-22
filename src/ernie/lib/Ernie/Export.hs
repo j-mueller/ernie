@@ -13,7 +13,7 @@ module Ernie.Export (
 
 import Control.Monad (when)
 import Data.Foldable (traverse_)
-import Data.GraphViz.Attributes (bgColor, filled, style, textLabel)
+import Data.GraphViz.Attributes (arrowFrom, arrowTo, bgColor, color, filled, noArrow, rounded, style, textLabel)
 import Data.GraphViz.Attributes.Colors.X11 qualified as Colors
 import Data.GraphViz.Attributes.Complete qualified as A
 import Data.GraphViz.Types qualified as GVT
@@ -32,7 +32,7 @@ import Ernie.Chart (DependencyGraph (..), TaskID (..))
 import Ernie.Measure (TaskMeasure (..))
 import Ernie.PERT (PERTEstimate (..))
 import Ernie.Sample (Sample (..))
-import Ernie.Task (Task (..))
+import Ernie.Task (TType (..), Task (..))
 import Ernie.Time (Days (..))
 
 -- | A DOT representation of the dependency graph.
@@ -57,11 +57,32 @@ insertGroup groupName xs = do
                 m
         allTasksInGroup = foldMap (\(i, _, _) -> Set.singleton i) xs
 
-    withGroup $ flip traverse_ xs $ \(i, deps, Task{taskName, taskDuration}) -> do
-        let lbl = A.Label $ A.RecordLabel $ A.FieldLabel (TL.fromStrict taskName) : getContent taskDuration
-        GV.node i [lbl]
-        flip traverse_ deps $ \source -> do
-            when (source `Set.member` allTasksInGroup) (GV.edge source i [])
+    withGroup $ flip traverse_ xs $ \(i, deps, Task{taskName, taskDuration, taskType}) ->
+        case taskType of
+            TEvent -> do
+                GV.node i [A.Shape A.DiamondShape, A.Label $ A.RecordLabel [A.FieldLabel " "]]
+                GV.node
+                    (negate i)
+                    [ A.Label $ A.RecordLabel $ A.FieldLabel (TL.fromStrict taskName) : getContent taskDuration
+                    , bgColor Colors.LightGray
+                    , style rounded
+                    ]
+                GV.edge
+                    i
+                    (negate i)
+                    [ color Colors.LightGray
+                    , A.Weight (GVT.Int 10)
+                    , style $ A.SItem A.Dashed []
+                    , arrowTo noArrow
+                    , arrowFrom noArrow
+                    ]
+                flip traverse_ deps $ \source -> do
+                    when (source `Set.member` allTasksInGroup) (GV.edge source i [])
+            TTask -> do
+                let lbl = A.Label $ A.RecordLabel $ A.FieldLabel (TL.fromStrict taskName) : getContent taskDuration
+                GV.node i [lbl]
+                flip traverse_ deps $ \source -> do
+                    when (source `Set.member` allTasksInGroup) (GV.edge source i [])
     flip traverse_ xs $ \(i, deps, _) -> do
         flip traverse_ deps $ \source -> do
             when (not (source `Set.member` allTasksInGroup)) (GV.edge source i [])
@@ -94,9 +115,11 @@ instance DotNodeContent Days where
 instance (DotNodeContent d) => DotNodeContent (Sample d) where
     getContent (Sample s) = getContent s
 
-instance (DotNodeContent d) => DotNodeContent (Maybe (PERTEstimate d)) where
-    getContent Nothing = []
-    getContent (Just PERTEstimate{pMin, pMode, pMax}) =
+instance (DotNodeContent d) => DotNodeContent (Maybe d) where
+    getContent = maybe [] getContent
+
+instance (DotNodeContent d) => DotNodeContent (PERTEstimate d) where
+    getContent PERTEstimate{pMin, pMode, pMax} =
         [ A.FlipFields
             (getContent pMin <> getContent pMode <> getContent pMax)
         ]
@@ -107,7 +130,7 @@ instance DotNodeContent () where
 instance DotNodeContent TaskMeasure where
     getContent TaskMeasure{tmCritPathCount = Sum c, tmTotalCount = Sum t, tmTotalDuration} =
         let perc = (fromIntegral c / fromIntegral t) * (100 :: Double)
-            cp = A.FieldLabel $ TL.fromStrict $ Text.pack $ "CP: " <> (take 4 $ show perc) <> "%"
+            cp = A.FieldLabel $ TL.fromStrict $ Text.pack $ "Crit. Path: " <> (take 4 $ show perc) <> "%"
             five = TDigest.quantile 0.05 tmTotalDuration
             fifty = TDigest.quantile 0.5 tmTotalDuration
             ninetyFive = TDigest.quantile 0.95 tmTotalDuration
